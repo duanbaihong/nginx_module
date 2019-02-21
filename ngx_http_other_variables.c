@@ -3,27 +3,20 @@
 #include <ngx_config.h>
 #include <ngx_core.h>
 #include <ngx_http.h>
-// #include <string.h>
-// u_char nowtimefmtstr [128];
-
-// u_char *ngx_get_format_time_t(char *fmt)
-// {
-//  time_t nowtime;
-//  struct tm * timeinfo;
-//  time(&nowtime);
-//  timeinfo = localtime (&nowtime);
-//  strftime(nowtimefmtstr,sizeof(nowtimefmtstr),fmt,timeinfo);
-//  return nowtimefmtstr;
-// }
+ngx_tm_t       ngx_now_tm;
 static ngx_int_t ngx_add_other_variable_t(ngx_conf_t *cf);
 static ngx_int_t ngx_http_other_variables_fmt(ngx_http_request_t *r, ngx_http_variable_value_t *v, u_char *t, ngx_int_t len)
 {
-    u_char *p;
+    u_char  *p;
+
     p = ngx_pnalloc(r->pool, len);
     if (p == NULL) {
         return NGX_ERROR;
     }
-    v->len = ngx_sprintf(p, "%s", t) - p;
+
+    ngx_memcpy(p, t, len);
+
+    v->len = len;
     v->valid = 1;
     v->no_cacheable = 0;
     v->not_found = 0;
@@ -46,81 +39,113 @@ static ngx_http_module_t ngx_module_other_varials_ctx = {
     NULL,   /* create location configuration 调用该函数创建本模块位于location block的配置信息存储结构。每个在配置中指明的location创建一个。该函数执行成功，返回创建的配置对象。失败的话，返回NULL。*/
     NULL    /* merge location configuration 与merge_srv_conf类似，这个也是进行配置值合并的地方。该函数成功的时候，返回NGX_CONF_OK。失败的话，返回NGX_CONF_ERROR或错误字符串。*/
 };
-
+static ngx_int_t ngx_get_format_time_t()
+{
+  time_t           sec;
+  struct timeval   tv;
+  ngx_gettimeofday(&tv);
+  sec=tv.tv_sec;
+  ngx_localtime(sec,&ngx_now_tm);
+  return NGX_OK;
+}
 static ngx_int_t ngx_get_year_t(ngx_http_request_t *r,ngx_http_variable_value_t *v,uintptr_t data)
 {
-  u_char  tmp[4];
-  ngx_cpystrn(tmp,ngx_cached_http_log_iso8601.data,5);
-  return ngx_http_other_variables_fmt(r,v,tmp,sizeof(tmp));
+  ngx_get_format_time_t();
+  u_char year[5];
+  ngx_sprintf(year,"%d",ngx_now_tm.tm_year);
+  // ngx_log_stderr(0, "dbh888 %s test failed",year);
+
+  return ngx_http_other_variables_fmt(r,v,year,sizeof(year)-1);
 }
 
 static ngx_int_t ngx_get_year2_t(ngx_http_request_t *r,ngx_http_variable_value_t *v,uintptr_t data)
 {
-  u_char  tmp[2];
-  ngx_cpystrn(tmp,ngx_cached_http_log_iso8601.data+2,3);
-  return ngx_http_other_variables_fmt(r,v,tmp,sizeof(tmp));
+  ngx_get_format_time_t();
+  u_char year2[3];
+  ngx_sprintf(year2,"%02d",ngx_now_tm.tm_year % 100);
+
+  return ngx_http_other_variables_fmt(r,v,year2,sizeof(year2)-1);
 }
 
 static ngx_int_t ngx_get_month_t(ngx_http_request_t *r,ngx_http_variable_value_t *v,uintptr_t data)
 {
-  u_char  tmp[2];
-  ngx_cpystrn(tmp,ngx_cached_http_log_iso8601.data+5,3);
-  return ngx_http_other_variables_fmt(r,v,tmp,sizeof(tmp));  
+  ngx_get_format_time_t();
+  u_char month[3];
+  ngx_sprintf(month,"%02d",ngx_now_tm.tm_mon);
+
+  return ngx_http_other_variables_fmt(r,v,month,sizeof(month)-1);
 }
 
 static ngx_int_t ngx_get_day_t(ngx_http_request_t *r,ngx_http_variable_value_t *v,uintptr_t data)
 {
-  u_char  tmp[2];
-  ngx_cpystrn(tmp,ngx_cached_http_log_iso8601.data+8,3);
-  return ngx_http_other_variables_fmt(r,v,tmp,sizeof(tmp));
+  ngx_get_format_time_t();
+  u_char days[3];
+  ngx_sprintf(days,"%02d",ngx_now_tm.tm_mday);
+
+  return ngx_http_other_variables_fmt(r,v,days,sizeof(days)-1);
 }
 static ngx_int_t ngx_get_hour_t(ngx_http_request_t *r,ngx_http_variable_value_t *v,uintptr_t data)
 {
-  u_char  tmp[2];
-  ngx_cpystrn(tmp,ngx_cached_http_log_iso8601.data+11,3);
-  return ngx_http_other_variables_fmt(r,v,tmp,sizeof(tmp));
+  ngx_get_format_time_t();
+  u_char hours[3];
+  ngx_sprintf(hours,"%02d",ngx_now_tm.tm_hour);
+
+  return ngx_http_other_variables_fmt(r,v,hours,sizeof(hours)-1);
 }
 static ngx_int_t ngx_get_hour12_t(ngx_http_request_t *r,ngx_http_variable_value_t *v,uintptr_t data)
 {
-  u_char  tmp[2];
-  u_char *p;
-  int nt;
-  ngx_cpystrn(tmp,ngx_cached_http_log_iso8601.data+11,3);
-  nt=ngx_atoi(tmp,2) % 12;
-  if (nt ==0){
-    nt=12;
-  }
-  p = ngx_pnalloc(r->pool, 2);
-  ngx_sprintf(p,"%02d",nt);
-  return ngx_http_other_variables_fmt(r,v,p,sizeof(p));
+  ngx_get_format_time_t();
+  u_char hour12[3];
+  ngx_sprintf(hour12,"%02d",ngx_now_tm.tm_hour / 2);
+
+  return ngx_http_other_variables_fmt(r,v,hour12,sizeof(hour12)-1);
 }
 static ngx_int_t ngx_get_minute_t(ngx_http_request_t *r,ngx_http_variable_value_t *v,uintptr_t data)
 {
-  u_char  tmp[2];
-  ngx_cpystrn(tmp,ngx_cached_http_log_iso8601.data+14,3);
-  return ngx_http_other_variables_fmt(r,v,tmp,sizeof(tmp));
+  ngx_get_format_time_t();
+  u_char minute[3];
+  ngx_sprintf(minute,"%02d",ngx_now_tm.tm_min);
+
+  return ngx_http_other_variables_fmt(r,v,minute,sizeof(minute)-1);
 }
 static ngx_int_t ngx_get_seconds_t(ngx_http_request_t *r,ngx_http_variable_value_t *v,uintptr_t data)
 {
-  u_char  tmp[2];
-  ngx_cpystrn(tmp,ngx_cached_http_log_iso8601.data+17,3);
-  return ngx_http_other_variables_fmt(r,v,tmp,sizeof(tmp));
+  ngx_get_format_time_t();
+  u_char seconds[3];
+  ngx_sprintf(seconds,"%02d",ngx_now_tm.tm_sec);
+
+  return ngx_http_other_variables_fmt(r,v,seconds,sizeof(seconds)-1);
+}
+static ngx_int_t ngx_get_week_t(ngx_http_request_t *r,ngx_http_variable_value_t *v,uintptr_t data)
+{
+  ngx_get_format_time_t();
+  u_char week[2];
+  ngx_sprintf(week,"%d",ngx_now_tm.tm_wday);
+
+  return ngx_http_other_variables_fmt(r,v,week,sizeof(week)-1);
+}
+static ngx_int_t ngx_get_time_http_t(ngx_http_request_t *r,ngx_http_variable_value_t *v,uintptr_t data)
+{
+  ngx_get_format_time_t();
+  u_char time_http[20];
+  ngx_sprintf(time_http,"%4d/%02d/%02d %02d:%02d:%02d",
+    ngx_now_tm.tm_year,
+    ngx_now_tm.tm_mon,
+    ngx_now_tm.tm_mday,
+    ngx_now_tm.tm_hour,
+    ngx_now_tm.tm_min,
+    ngx_now_tm.tm_sec);
+
+  return ngx_http_other_variables_fmt(r,v,time_http,sizeof(time_http)-1);
 }
 static ngx_int_t ngx_get_timestamp_t(ngx_http_request_t *r,ngx_http_variable_value_t *v,uintptr_t data)
 {
-  time_t  tmp;
-  tmp=ngx_time();
-  u_char *p;
-  p = ngx_pnalloc(r->pool, 11);
-  if (p == NULL) {
-      return NGX_ERROR;
-  }
-  v->len = ngx_sprintf(p, "%l", tmp) - p;
-  v->valid = 1;
-  v->no_cacheable = 0;
-  v->not_found = 0;
-  v->data = p;
-  return NGX_OK;
+  time_t  timestamp;
+  u_char timestamp_char[12];
+  timestamp=ngx_time();
+  ngx_sprintf(timestamp_char,"%d",timestamp);
+  // ngx_log_stderr(0, "timestamp_char %s test failed",timestamp_char);
+  return ngx_http_other_variables_fmt(r,v,timestamp_char,sizeof(timestamp_char)-2);
 }
 
 
@@ -144,7 +169,7 @@ static ngx_http_variable_t ngx_http_other_commands[] = { // 定义Variables模�
       ngx_get_seconds_t, 0,
       NGX_HTTP_VAR_NOCACHEABLE, 0 },
     { ngx_string("week"), NULL,
-      ngx_get_year_t, 0,
+      ngx_get_week_t, 0,
       NGX_HTTP_VAR_NOCACHEABLE, 0 },
     { ngx_string("hour"), NULL, 
       ngx_get_hour_t, 0, 
@@ -153,7 +178,7 @@ static ngx_http_variable_t ngx_http_other_commands[] = { // 定义Variables模�
       ngx_get_hour12_t,0,
       NGX_HTTP_VAR_NOCACHEABLE, 0 },
     { ngx_string("time_http"), NULL, 
-      ngx_get_year_t, 0,
+      ngx_get_time_http_t, 0,
       NGX_HTTP_VAR_NOCACHEABLE, 0 },
     { ngx_string("unix_time"), NULL, 
       ngx_get_timestamp_t, 0,
