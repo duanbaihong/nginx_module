@@ -118,11 +118,11 @@ static ngx_int_t ngx_get_week_t(ngx_stream_session_t *s,ngx_stream_variable_valu
 
   return ngx_stream_other_variables_fmt(s,v,week,sizeof(week)-1);
 }
-static ngx_int_t ngx_get_time_http_t(ngx_stream_session_t *s,ngx_stream_variable_value_t *v,uintptr_t data)
+static ngx_int_t ngx_get_time_stream_t(ngx_stream_session_t *s,ngx_stream_variable_value_t *v,uintptr_t data)
 {
   ngx_get_format_time_t();
-  u_char time_http[20];
-  ngx_sprintf(time_http,"%4d/%02d/%02d %02d:%02d:%02d",
+  u_char time_stream[20];
+  ngx_sprintf(time_stream,"%4d/%02d/%02d %02d:%02d:%02d",
     ngx_now_tm.tm_year,
     ngx_now_tm.tm_mon,
     ngx_now_tm.tm_mday,
@@ -130,7 +130,7 @@ static ngx_int_t ngx_get_time_http_t(ngx_stream_session_t *s,ngx_stream_variable
     ngx_now_tm.tm_min,
     ngx_now_tm.tm_sec);
 
-  return ngx_stream_other_variables_fmt(s,v,time_http,sizeof(time_http)-1);
+  return ngx_stream_other_variables_fmt(s,v,time_stream,sizeof(time_stream)-1);
 }
 static ngx_int_t ngx_get_timestamp_t(ngx_stream_session_t *s,ngx_stream_variable_value_t *v,uintptr_t data)
 {
@@ -170,8 +170,8 @@ static ngx_stream_variable_t ngx_stream_other_commands[] = { // 定义Variables�
     { ngx_string("hour12"), NULL,
       ngx_get_hour12_t,0,
       NGX_STREAM_VAR_NOCACHEABLE, 0 },
-    { ngx_string("time_http"), NULL, 
-      ngx_get_time_http_t, 0,
+    { ngx_string("time_stream"), NULL, 
+      ngx_get_time_stream_t, 0,
       NGX_STREAM_VAR_NOCACHEABLE, 0 },
     { ngx_string("unix_time"), NULL, 
       ngx_get_timestamp_t, 0,
