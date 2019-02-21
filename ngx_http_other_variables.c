@@ -1,10 +1,8 @@
-// #include <stdio.h>
-// #include <time.h>
 #include <ngx_config.h>
 #include <ngx_core.h>
 #include <ngx_http.h>
 ngx_tm_t       ngx_now_tm;
-static ngx_int_t ngx_add_other_variable_t(ngx_conf_t *cf);
+static ngx_int_t ngx_http_add_other_variables_t(ngx_conf_t *cf);
 static ngx_int_t ngx_http_other_variables_fmt(ngx_http_request_t *r, ngx_http_variable_value_t *v, u_char *t, ngx_int_t len)
 {
     u_char  *p;
@@ -24,8 +22,8 @@ static ngx_int_t ngx_http_other_variables_fmt(ngx_http_request_t *r, ngx_http_va
 
     return NGX_OK;
 }
-static ngx_http_module_t ngx_module_other_varials_ctx = {
-    ngx_add_other_variable_t, /* preconfiguration 在创建和读取该模块的配置信息之前被调用。*/
+static ngx_http_module_t ngx_http_module_other_variables_ctx = {
+    ngx_http_add_other_variables_t, /* preconfiguration 在创建和读取该模块的配置信息之前被调用。*/
     NULL, /* postconfiguration 在创建和读取该模块的配置信息之后被调用。*/
  
     NULL, /* create main configuration 调用该函数创建本模块位于http block的配置信息存储结构。该函数成功的时候，返回创建的配置对象。失败的话，返回NULL。*/
@@ -128,7 +126,8 @@ static ngx_int_t ngx_get_time_http_t(ngx_http_request_t *r,ngx_http_variable_val
 {
   ngx_get_format_time_t();
   u_char time_http[20];
-  ngx_sprintf(time_http,"%4d/%02d/%02d %02d:%02d:%02d",
+  ngx_sprintf(time_http,
+    "%4d/%02d/%02d %02d:%02d:%02d",
     ngx_now_tm.tm_year,
     ngx_now_tm.tm_mon,
     ngx_now_tm.tm_mday,
@@ -187,7 +186,7 @@ static ngx_http_variable_t ngx_http_other_commands[] = { // 定义Variables模�
 
 ngx_module_t ngx_http_other_variables = {
     NGX_MODULE_V1,
-    &ngx_module_other_varials_ctx, /* module context */
+    &ngx_http_module_other_variables_ctx, /* module context */
     NULL,    /* module directives */
     NGX_HTTP_MODULE,                  /* module type */
     NULL,                             /* init master */
@@ -200,7 +199,7 @@ ngx_module_t ngx_http_other_variables = {
     NGX_MODULE_V1_PADDING
 };
 
-static ngx_int_t ngx_add_other_variable_t(ngx_conf_t *cf)
+static ngx_int_t ngx_http_add_other_variables_t(ngx_conf_t *cf)
 {
   ngx_http_variable_t *var, *v;
   for (v = ngx_http_other_commands; v->name.len; v++) {
